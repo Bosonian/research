@@ -65,6 +65,14 @@ class VibrationController(context: Context) {
         /** Android 16; the frequency-envelope API (API 36). Literal so the app
          *  still builds against compileSdk 34. */
         private const val ENVELOPE_API = 36
+
+        /**
+         * `AudioFormat.CHANNEL_OUT_HAPTIC_A` is a hidden (`@SystemApi`) constant
+         * that is not exposed in the public SDK, so it can't be referenced
+         * against compileSdk 34. Its value is fixed in the platform; we declare
+         * it here to build the haptic channel mask. If a device routes it
+         * differently the AUDIO_HAPTIC path simply fails and we fall back. */
+        private const val CHANNEL_OUT_HAPTIC_A = 0x10000000
     }
 
     private val vibrator: Vibrator? = run {
@@ -79,8 +87,9 @@ class VibrationController(context: Context) {
 
     private val hapticPlaybackSupported: Boolean = run {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            (context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)
-                ?.isHapticPlaybackSupported == true
+            // isHapticPlaybackSupported() is a *static* method on AudioManager
+            // (added in API 29), not an instance property.
+            AudioManager.isHapticPlaybackSupported()
         } else {
             false
         }
@@ -203,7 +212,7 @@ class VibrationController(context: Context) {
             val format = AudioFormat.Builder()
                 .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
                 .setSampleRate(SAMPLE_RATE)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO or AudioFormat.CHANNEL_OUT_HAPTIC_A)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO or CHANNEL_OUT_HAPTIC_A)
                 .build()
 
             val sizeBytes = data.size * Float.SIZE_BYTES
