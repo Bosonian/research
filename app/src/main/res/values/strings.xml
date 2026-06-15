@@ -35,4 +35,12 @@
     <string name="threshold_result">Estimated threshold: %1$d%% of full scale (%2$.1f dB rel. full scale).</string>
     <string name="threshold_no_result">No threshold could be estimated.</string>
     <string name="threshold_disclaimer">Screening aid only — a relative, device-specific estimate, NOT a calibrated measurement or diagnosis. Hold the phone consistently against the test site and keep the room quiet.</string>
+
+    <!-- In-app error console -->
+    <string name="error_console_title">Error console</string>
+    <string name="error_copy">Copy Errors</string>
+    <string name="error_clear">Clear</string>
+    <string name="error_close">Close</string>
+    <string name="error_copied">Errors copied</string>
+    <string name="error_nothing_to_copy">Nothing to copy</string>
 </resources>
