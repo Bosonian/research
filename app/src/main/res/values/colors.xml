@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#FF101418</color>
+    <color name="disclaimer_bg">#FF1C2530</color>
+    <color name="accent">#FF4FC3F7</color>
+    <color name="text_primary">#FFECEFF1</color>
+    <color name="text_secondary">#FFB0BEC5</color>
+
+    <color name="purple_500">#FF6200EE</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

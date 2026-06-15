@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A stylised vibration wave centred within the adaptive icon safe zone. -->
+    <path
+        android:strokeColor="#4FC3F7"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M30,54 q6,-22 12,0 q6,22 12,0 q6,-22 12,0 q6,22 12,0" />
+</vector>
