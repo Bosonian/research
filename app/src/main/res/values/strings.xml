@@ -8,15 +8,16 @@
     <string name="stop">Stop</string>
 
     <string name="status_idle">Ready</string>
-    <string name="status_running">Vibrating for %1$d s…</string>
-    <string name="status_no_vibrator">No vibration motor available</string>
+    <string name="status_running">Driving 128 Hz for %1$d s…</string>
+    <string name="status_running_native">Vibrating (native frequency) for %1$d s…</string>
+    <string name="status_no_vibrator">No vibration output available</string>
 
     <string name="duration_label">Duration: %1$d s</string>
     <string name="intensity_label">Intensity: %1$d%%</string>
 
-    <string name="cap_amplitude">Motor: amplitude control supported — cleanest 128 Hz envelope.</string>
-    <string name="cap_on_off">Motor: on/off only (no amplitude control). 128 Hz envelope produced by pulsing.</string>
-    <string name="cap_no_vibrator">This device has no vibration motor.</string>
+    <string name="cap_audio_haptic">Mode: audio-coupled haptics — actuator driven with a true 128 Hz sine wave (output is attenuated off-resonance).</string>
+    <string name="cap_native">Mode: native motor — this device has no haptic audio channel, so vibration plays at the motor\'s own resonant frequency, NOT 128 Hz.</string>
+    <string name="cap_no_vibrator">This device has no usable vibration output.</string>
 
-    <string name="disclaimer">For research/educational use only. This is NOT a certified medical device. Phone motors cannot be commanded to an exact mechanical frequency: the app pulses the motor 128 times per second to approximate a 128 Hz stimulus. Actual perceived frequency depends on the device\'s actuator. Do not use for diagnosis.</string>
+    <string name="disclaimer">For research/educational use only. This is NOT a certified medical device and must not be used for diagnosis. A phone cannot reproduce a calibrated 128 Hz tuning fork: on supported devices the app drives the actuator with a 128 Hz sine via the haptic audio channel (attenuated off-resonance); otherwise it falls back to the motor\'s native frequency.</string>
 </resources>

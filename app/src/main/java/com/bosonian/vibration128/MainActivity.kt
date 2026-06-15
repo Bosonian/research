@@ -49,27 +49,35 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // Intensity is meaningful in audio-haptic mode (sine amplitude) and in
+        // native mode only when the motor supports amplitude control.
+        val intensityUsable = controller.mode == VibrationController.Mode.AUDIO_HAPTIC ||
+            controller.hasAmplitudeControl
         binding.intensityRow.visibility =
-            if (controller.hasAmplitudeControl) android.view.View.VISIBLE
-            else android.view.View.GONE
+            if (intensityUsable) android.view.View.VISIBLE else android.view.View.GONE
 
         binding.startStopButton.setOnClickListener {
             if (isRunning) stopVibration() else startVibration()
         }
 
-        binding.startStopButton.isEnabled = controller.hasVibrator
+        binding.startStopButton.isEnabled = controller.mode != VibrationController.Mode.NONE
     }
 
     private fun startVibration() {
-        val started = controller.start(durationSeconds, intensity)
-        if (!started) {
+        val usedMode = controller.start(durationSeconds, intensity)
+        if (usedMode == VibrationController.Mode.NONE) {
             binding.statusText.text = getString(R.string.status_no_vibrator)
             return
         }
         isRunning = true
         binding.startStopButton.text = getString(R.string.stop)
-        binding.statusText.text = getString(R.string.status_running, durationSeconds)
-        // Auto-reset the UI when the waveform finishes.
+        val statusRes = if (usedMode == VibrationController.Mode.NATIVE) {
+            R.string.status_running_native
+        } else {
+            R.string.status_running
+        }
+        binding.statusText.text = getString(statusRes, durationSeconds)
+        // Auto-reset the UI when the stimulus finishes.
         handler.removeCallbacks(stopRunnable)
         handler.postDelayed(stopRunnable, durationSeconds * 1000L)
     }
@@ -92,10 +100,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showCapabilities() {
-        binding.capabilityText.text = when {
-            !controller.hasVibrator -> getString(R.string.cap_no_vibrator)
-            controller.hasAmplitudeControl -> getString(R.string.cap_amplitude)
-            else -> getString(R.string.cap_on_off)
+        binding.capabilityText.text = when (controller.mode) {
+            VibrationController.Mode.AUDIO_HAPTIC -> getString(R.string.cap_audio_haptic)
+            VibrationController.Mode.NATIVE -> getString(R.string.cap_native)
+            VibrationController.Mode.NONE -> getString(R.string.cap_no_vibrator)
         }
     }
 
