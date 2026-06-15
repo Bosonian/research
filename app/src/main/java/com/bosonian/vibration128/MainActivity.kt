@@ -61,6 +61,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.startStopButton.isEnabled = controller.mode != VibrationController.Mode.NONE
+
+        binding.thresholdButton.setOnClickListener {
+            if (isRunning) stopVibration()
+            startActivity(android.content.Intent(this, ThresholdActivity::class.java))
+        }
     }
 
     private fun startVibration() {
@@ -101,6 +106,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showCapabilities() {
         binding.capabilityText.text = when (controller.mode) {
+            VibrationController.Mode.ENVELOPE -> getString(R.string.cap_envelope)
             VibrationController.Mode.AUDIO_HAPTIC -> getString(R.string.cap_audio_haptic)
             VibrationController.Mode.NATIVE -> getString(R.string.cap_native)
             VibrationController.Mode.NONE -> getString(R.string.cap_no_vibrator)

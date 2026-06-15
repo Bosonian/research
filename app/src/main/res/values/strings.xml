@@ -15,9 +15,24 @@
     <string name="duration_label">Duration: %1$d s</string>
     <string name="intensity_label">Intensity: %1$d%%</string>
 
+    <string name="cap_envelope">Mode: frequency envelope (Android 16+) — calibrated 128 Hz requested directly from the actuator.</string>
     <string name="cap_audio_haptic">Mode: audio-coupled haptics — actuator driven with a true 128 Hz sine wave (output is attenuated off-resonance).</string>
     <string name="cap_native">Mode: native motor — this device has no haptic audio channel, so vibration plays at the motor\'s own resonant frequency, NOT 128 Hz.</string>
     <string name="cap_no_vibrator">This device has no usable vibration output.</string>
 
     <string name="disclaimer">For research/educational use only. This is NOT a certified medical device and must not be used for diagnosis. A phone cannot reproduce a calibrated 128 Hz tuning fork: on supported devices the app drives the actuator with a 128 Hz sine via the haptic audio channel (attenuated off-resonance); otherwise it falls back to the motor\'s native frequency.</string>
+
+    <!-- Threshold (VPT) screen -->
+    <string name="threshold_button">Vibration threshold test</string>
+    <string name="threshold_title">Vibration threshold</string>
+    <string name="trial_prompt">Did you feel the vibration?</string>
+    <string name="trial_progress">Trial %1$d • reversals %2$d/%3$d</string>
+    <string name="replay_stimulus">Replay stimulus</string>
+    <string name="felt_it">I felt it</string>
+    <string name="not_felt_it">I didn\'t feel it</string>
+    <string name="restart_test">Restart test</string>
+    <string name="threshold_done">Done</string>
+    <string name="threshold_result">Estimated threshold: %1$d%% of full scale (%2$.1f dB rel. full scale).</string>
+    <string name="threshold_no_result">No threshold could be estimated.</string>
+    <string name="threshold_disclaimer">Screening aid only — a relative, device-specific estimate, NOT a calibrated measurement or diagnosis. Hold the phone consistently against the test site and keep the room quiet.</string>
 </resources>

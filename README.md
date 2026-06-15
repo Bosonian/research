@@ -17,9 +17,16 @@ have rise/ring-down times of tens of milliseconds, so they cannot start and stop
 that fast and instead emit a mushy buzz at their own resonant frequency.
 
 The correct way to render an arbitrary frequency is to drive the actuator with a
-**sampled waveform**. This app picks the best available method per device:
+**sampled waveform**. This app picks the best available method per device, in
+priority order:
 
-1. **`AUDIO_HAPTIC` (preferred, Android 10+ where supported).** When
+0. **`ENVELOPE` (best, Android 16 / API 36).** Requests 128 Hz directly via
+   `VibrationEffect.WaveformEnvelopeBuilder` — calibrated, frequency-specified
+   haptics. It is invoked through a small **reflection bridge** guarded by
+   `Build.VERSION.SDK_INT >= 36`, so the project keeps building against
+   `compileSdk 34` (a direct reference would force AGP 9 / Gradle 9). If the API
+   or device support is missing, it falls through to the next method.
+1. **`AUDIO_HAPTIC` (Android 10+ where supported).** When
    `AudioManager.isHapticPlaybackSupported()` is true, the app synthesises a
    128 Hz sine and writes it to a dedicated **haptic audio channel**
    (`AudioFormat.CHANNEL_OUT_HAPTIC_A`) via `AudioTrack`, with the audio channel
@@ -38,22 +45,29 @@ The correct way to render an arbitrary frequency is to drive the actuator with a
 - Audio-coupled haptics are device-specific (higher-end Pixels and several
   flagships); many phones fall back to `NATIVE`.
 
-### The future-best path (Android 16 / API 36)
+## Vibration perception threshold (VPT) screening
 
-Android 16 adds calibrated, frequency-specified haptics:
-`VibrationEffect.WaveformEnvelopeBuilder`/`BasicEnvelopeBuilder` (specify
-frequency in Hz, with amplitude in dB *sensation level*) plus
-`Vibrator.getFrequencyProfile()` / `VibratorFrequencyProfile` to query the
-supported band. When this project raises `compileSdk` to 36 this becomes the
-preferred path and supersedes `AUDIO_HAPTIC`. It is intentionally **not**
-referenced yet so the app builds against `compileSdk 34`.
+Beyond playing a fixed stimulus, the **threshold test** (button on the main
+screen → `ThresholdActivity`) estimates a vibration perception threshold using an
+**adaptive up/down staircase** (`StaircaseController`):
+
+- Each trial plays a 2 s stimulus; the patient taps *I felt it* / *I didn't feel
+  it*.
+- "Felt" lowers the amplitude, "not felt" raises it; the step halves at each
+  **reversal** and the run ends after 6 reversals.
+- The threshold is the mean amplitude of the last 4 reversals, reported as
+  percent of full scale and dB relative to full scale.
+
+Frequency is whatever the device can render (128 Hz in `ENVELOPE`/`AUDIO_HAPTIC`
+modes, native otherwise); the staircase varies **amplitude** only. This mirrors how
+published smartphone-VPT studies work and is the clinically meaningful mode — but
+it is a **relative, device-specific screening aid, not a calibrated measurement**.
 
 ## Features
 
 - One-tap 128 Hz stimulus with auto-stop, using the best method the device supports.
-- Adjustable **duration** (1–10 s).
-- Adjustable **intensity** (sine amplitude in audio-haptic mode; motor amplitude
-  in native mode where supported).
+- **VPT staircase** screening mode.
+- Adjustable **duration** (1–10 s) and **intensity**.
 - On-screen **mode/capability** readout + safety disclaimer.
 
 ## Status / verification

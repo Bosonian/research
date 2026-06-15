@@ -26,7 +26,13 @@ import kotlin.math.sin
  * fast and instead emit a mushy buzz at their own resonant frequency.
  *
  * The genuinely correct way to render an arbitrary frequency is to drive the
- * actuator with a sampled waveform:
+ * actuator with a sampled waveform. The controller picks the best path the
+ * device supports, in priority order:
+ *
+ *  0. [Mode.ENVELOPE] — on Android 16+ (API 36), request 128 Hz directly via
+ *     `VibrationEffect.WaveformEnvelopeBuilder` (calibrated, frequency-specified
+ *     haptics). Accessed by reflection so the project still builds against
+ *     compileSdk 34; falls through if unavailable.
  *
  *  1. [Mode.AUDIO_HAPTIC] — on devices that support audio-coupled haptics
  *     (API 29+ and `isHapticPlaybackSupported`), we synthesise a 128 Hz sine
@@ -50,11 +56,15 @@ import kotlin.math.sin
  */
 class VibrationController(context: Context) {
 
-    enum class Mode { AUDIO_HAPTIC, NATIVE, NONE }
+    enum class Mode { ENVELOPE, AUDIO_HAPTIC, NATIVE, NONE }
 
     companion object {
         const val TARGET_FREQUENCY_HZ = 128.0
         private const val SAMPLE_RATE = 48_000
+
+        /** Android 16; the frequency-envelope API (API 36). Literal so the app
+         *  still builds against compileSdk 34. */
+        private const val ENVELOPE_API = 36
     }
 
     private val vibrator: Vibrator? = run {
@@ -76,6 +86,23 @@ class VibrationController(context: Context) {
         }
     }
 
+    /**
+     * Whether the actuator supports API 36 envelope effects. Checked by
+     * reflection: if the method is absent (older platform) or returns false,
+     * we treat envelopes as unsupported and fall back — so an incorrect guess
+     * degrades safely rather than playing nothing.
+     */
+    private val envelopeSupported: Boolean = run {
+        if (Build.VERSION.SDK_INT < ENVELOPE_API) return@run false
+        val vib = vibrator ?: return@run false
+        try {
+            val method = Vibrator::class.java.getMethod("areEnvelopeEffectsSupported")
+            method.invoke(vib) as? Boolean ?: false
+        } catch (t: Throwable) {
+            false
+        }
+    }
+
     private var audioTrack: AudioTrack? = null
 
     val hasVibrator: Boolean
@@ -84,9 +111,10 @@ class VibrationController(context: Context) {
     val hasAmplitudeControl: Boolean
         get() = vibrator?.hasAmplitudeControl() == true
 
-    /** The rendering strategy this device will use. */
+    /** The rendering strategy this device is expected to use (best first). */
     val mode: Mode
         get() = when {
+            envelopeSupported -> Mode.ENVELOPE
             hapticPlaybackSupported -> Mode.AUDIO_HAPTIC
             hasVibrator -> Mode.NATIVE
             else -> Mode.NONE
@@ -102,14 +130,53 @@ class VibrationController(context: Context) {
         stop()
         if (durationSeconds <= 0) return Mode.NONE
         val amplitude = intensity.coerceIn(1, 255)
+        val amplitude01 = amplitude / 255f
 
-        if (mode == Mode.AUDIO_HAPTIC && startAudioHaptic(durationSeconds, amplitude / 255f)) {
+        if (envelopeSupported && startEnvelope(durationSeconds, amplitude01)) {
+            return Mode.ENVELOPE
+        }
+        if (hapticPlaybackSupported && startAudioHaptic(durationSeconds, amplitude01)) {
             return Mode.AUDIO_HAPTIC
         }
         if (hasVibrator && startNative(durationSeconds, amplitude)) {
             return Mode.NATIVE
         }
         return Mode.NONE
+    }
+
+    /**
+     * Android 16 (API 36) calibrated, frequency-specified haptics via
+     * `VibrationEffect.WaveformEnvelopeBuilder`. Accessed by reflection so the
+     * project keeps building against compileSdk 34 (compileSdk 36 would force
+     * AGP 9 / Gradle 9). Ramps up, holds 128 Hz, ramps down to avoid abrupt
+     * ring-down. Returns false (so callers fall back) if anything is missing.
+     */
+    private fun startEnvelope(durationSeconds: Int, amplitude01: Float): Boolean {
+        val vib = vibrator ?: return false
+        return try {
+            val builderCls = Class.forName("android.os.VibrationEffect\$WaveformEnvelopeBuilder")
+            val builder = builderCls.getDeclaredConstructor().newInstance()
+            val addControlPoint = builderCls.methods.first {
+                it.name == "addControlPoint" && it.parameterTypes.size == 3
+            }
+            // The duration parameter is int on some builds and long on others;
+            // box it to whatever the platform actually declares.
+            val durType = addControlPoint.parameterTypes[2]
+            fun dur(ms: Long): Any = if (durType == java.lang.Long.TYPE) ms else ms.toInt()
+
+            val freq = TARGET_FREQUENCY_HZ.toFloat()
+            val holdMs = durationSeconds * 1000L
+            val amp = amplitude01.coerceIn(0f, 1f)
+            addControlPoint.invoke(builder, amp, freq, dur(30L))     // ramp up
+            addControlPoint.invoke(builder, amp, freq, dur(holdMs))  // hold 128 Hz
+            addControlPoint.invoke(builder, 0f, freq, dur(30L))      // ramp down
+
+            val effect = builderCls.getMethod("build").invoke(builder) as VibrationEffect
+            vib.vibrate(effect)
+            true
+        } catch (t: Throwable) {
+            false
+        }
     }
 
     /**
